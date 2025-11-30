@@ -1,0 +1,281 @@
+<div class="container-fluid min-vh-100 bg-light">
+  
+  <!-- HEADER -->
+  <div class="row py-3 border-bottom bg-white mb-4 shadow-sm align-items-center">
+    <div class="col-auto">
+      <button cButton color="light" routerLink="/" class="border" cTooltip="Volver">
+        <c-icon [content]="icons.cilArrowLeft"></c-icon>
+      </button>
+    </div>
+    <div class="col">
+      <h4 class="mb-0 text-primary fw-bold">Gestión de Talento Humano y Nómina</h4>
+      <small class="text-secondary text-uppercase ls-1">JBNetsys ERP</small>
+    </div>
+    <div class="col-auto">
+      <span class="badge bg-success px-3 py-2 rounded-pill">Empleados Activos: {{ totalEmpleados }}</span>
+    </div>
+  </div>
+
+  <div class="row g-4 px-3 pb-5">
+    
+    <!-- SIDEBAR -->
+    <div class="col-md-3 col-xl-2 fade-in-left">
+      <c-card class="border-0 shadow-sm h-100">
+        <div class="card-header bg-primary text-white py-3">
+          <h6 class="mb-0 fw-bold"><c-icon [content]="icons.cilPeople" class="me-2"></c-icon> RR.HH.</h6>
+        </div>
+        <div class="card-body p-0">
+          <c-accordion [alwaysOpen]="false" class="accordion-flush">
+            <c-accordion-item *ngFor="let grupo of menuEstructura; let i = index" [visible]="i === 0">
+              <ng-template cTemplateId="accordionHeader">
+                 <div class="fw-semibold small text-uppercase d-flex align-items-center gap-2">
+                    <c-icon [content]="grupo.icono === 'cilList' ? icons.cilList : (grupo.icono === 'cilCalculator' ? icons.cilCalculator : icons.cilChartLine)" class="text-primary"></c-icon>
+                    {{ grupo.titulo }}
+                 </div>
+              </ng-template>
+              <ng-template cTemplateId="accordionBody">
+                <div class="list-group list-group-flush">
+                  <button *ngFor="let sub of grupo.items" 
+                    class="list-group-item list-group-item-action border-0 ps-3 small py-2"
+                    [class.active]="vistaActual === sub.id"
+                    [class.fw-bold]="vistaActual === sub.id"
+                    (click)="seleccionarVista(sub)">
+                    • {{ sub.nombre }}
+                  </button>
+                </div>
+              </ng-template>
+            </c-accordion-item>
+          </c-accordion>
+        </div>
+        <div class="p-3 border-top mt-auto">
+             <button class="btn btn-outline-secondary w-100 btn-sm" (click)="volverDashboard()">
+               <c-icon [content]="icons.cilChartLine"></c-icon> Resumen
+             </button>
+        </div>
+      </c-card>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="col-md-9 col-xl-10">
+      <div class="card border-0 shadow-sm min-vh-75">
+        
+        <!-- DYNAMIC HEADER -->
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold text-dark-emphasis mb-0">{{ tituloVista }}</h5>
+            
+            <div class="d-flex gap-2">
+                <div *ngIf="vistaActual === 'planillas' || vistaActual === 'historial'" class="btn-group me-2">
+                   <button cButton color="light" class="border"><c-icon [content]="icons.cilPrint"></c-icon></button>
+                   <button cButton color="light" class="border"><c-icon [content]="icons.cilSearch"></c-icon></button>
+                </div>
+
+                <button cButton color="secondary" variant="ghost" class="border" (click)="exportarPDF()">
+                   <c-icon [content]="icons.cilCloudDownload"></c-icon> PDF
+                </button>
+                
+                <!-- Botones Condicionales (Logica booleana desde TS) -->
+                <button *ngIf="btnNuevoEmpleado" cButton color="primary" (click)="toggleModalEmpleado()">
+                    <c-icon [content]="icons.cilPlus"></c-icon> Contratar Empleado
+                </button>
+
+                <button *ngIf="btnCalcular" cButton color="success" class="text-white" (click)="toggleModalNomina()">
+                    <c-icon [content]="icons.cilCalculator"></c-icon> Generar Rol
+                </button>
+
+                <button *ngIf="btnSolicitudVacacion" cButton color="info" class="text-white" (click)="toggleModalVacacion()">
+                    <c-icon [content]="icons.cilTask"></c-icon> Solicitar
+                </button>
+
+                <button *ngIf="btnNuevoItem" cButton color="primary" (click)="toggleModalCatalogo()">
+                    <c-icon [content]="icons.cilPlus"></c-icon> Nuevo Registro
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body bg-light-subtle">
+            
+            <!-- 1. DASHBOARD -->
+            <ng-container *ngIf="isDashboard">
+                <div class="row g-4 fade-in-up">
+                    <div class="col-md-4">
+                        <c-card class="border-0 shadow-sm border-top border-4 border-primary p-4 text-center">
+                            <h2 class="display-6 fw-bold">{{ totalEmpleados }}</h2>
+                            <small class="text-uppercase fw-bold text-muted">Personal Activo</small>
+                        </c-card>
+                    </div>
+                    <div class="col-md-4">
+                        <c-card class="border-0 shadow-sm border-top border-4 border-success p-4 text-center">
+                            <h2 class="display-6 fw-bold">{{ costoNominaMes | currency }}</h2>
+                            <small class="text-uppercase fw-bold text-muted">Costo Nómina Mes</small>
+                        </c-card>
+                    </div>
+                    <div class="col-md-4">
+                        <c-card class="border-0 shadow-sm border-top border-4 border-warning p-4 text-center">
+                            <h2 class="display-6 fw-bold">{{ vacacionesPendientes }}</h2>
+                            <small class="text-uppercase fw-bold text-muted">Solicitudes Vacaciones</small>
+                        </c-card>
+                    </div>
+                    <div class="col-12 mt-5 text-center text-muted">
+                        <c-icon [content]="icons.cilPeople" size="4xl" class="mb-3 opacity-25"></c-icon>
+                        <h4>Gestión Humana Integral</h4>
+                    </div>
+                </div>
+            </ng-container>
+
+            <!-- 2. EMPLEADOS -->
+            <ng-container *ngIf="isEmpleados">
+                 <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle">
+                        <thead class="bg-light text-uppercase small text-secondary">
+                            <tr><th class="ps-3">ID</th><th>Empleado</th><th>Cargo/Depto</th><th class="text-end">Salario Base</th><th class="text-center pe-3">Est</th></tr>
+                        </thead>
+                        <tbody>
+                            <!-- Usa listaVisible del TS -->
+                            <tr *ngFor="let e of listaVisible">
+                                <td class="ps-3 fw-bold">{{e.id}}</td>
+                                <td><div class="d-flex align-items-center"><div class="avatar bg-primary text-white rounded-circle d-flex justify-content-center align-items-center me-2" style="width:30px;height:30px;">{{e.nombre.charAt(0)}}</div>{{e.nombre}}<div class="small text-muted ms-2">Ingreso: {{e.fechaIngreso}}</div></div></td>
+                                <td><div class="fw-bold">{{e.cargo}}</div><div class="small text-muted">{{e.depto}}</div></td>
+                                <td class="text-end">{{e.salario | currency}}</td>
+                                <td class="text-center pe-3"><c-badge [color]="e.estado==='Activo'?'success':'warning'" shape="rounded-pill">{{e.estado}}</c-badge></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                 </div>
+            </ng-container>
+
+            <!-- 3. NÓMINAS HISTORIAL -->
+            <ng-container *ngIf="isNominas">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <div *ngIf="vistaActual === 'calculo-nomina'" class="alert alert-light border d-flex justify-content-between align-items-center">
+                        <div><strong>Mes en curso:</strong> Noviembre 2025 (Abierto)</div>
+                        <button cButton color="success" class="text-white" (click)="toggleModalNomina()">Pre-Visualizar Rol</button>
+                    </div>
+                    
+                    <h6 class="fw-bold text-muted text-uppercase small mb-3">Historial de Procesos</h6>
+                    <table cTable hover class="mb-0 align-middle">
+                        <thead class="bg-light small text-secondary">
+                            <tr><th class="ps-3">Periodo</th><th>Ejecutado</th><th class="text-end">Tot. Ingresos</th><th class="text-end">Tot. Egresos</th><th class="text-end pe-3">Neto Pagar</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let n of listaVisible"> <!-- Usando listaVisible rellenada en TS -->
+                                <td class="ps-3 fw-bold text-primary">{{ n.periodo }}</td>
+                                <td>{{ n.fecha }} <c-badge class="ms-2" color="info">{{ n.estado }}</c-badge></td>
+                                <td class="text-end text-success">{{ n.totalIngresos | currency }}</td>
+                                <td class="text-end text-danger">{{ n.totalEgresos | currency }}</td>
+                                <td class="text-end fw-bold text-dark pe-3">{{ n.neto | currency }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </ng-container>
+
+            <!-- 4. VACACIONES -->
+            <ng-container *ngIf="isVacaciones">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle">
+                        <thead class="bg-light text-secondary small text-uppercase">
+                            <tr><th class="ps-3">Empleado</th><th>Fecha Salida</th><th>Días</th><th class="text-end pe-3">Estado</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let v of listaVisible">
+                                <td class="ps-3 fw-bold">{{ v.empleado }}</td>
+                                <td>{{ v.fechaInicio }}</td>
+                                <td>{{ v.dias }} días</td>
+                                <td class="text-end pe-3"><c-badge color="info">{{ v.estado }}</c-badge></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </ng-container>
+
+            <!-- 5. CATALOGOS VARIOS (Cargos, Deptos) -->
+            <ng-container *ngIf="isCatalogos">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <!-- Tabla Genérica que renderiza lo que haya en listaVisible -->
+                    <table cTable hover class="mb-0 align-middle">
+                        <thead class="bg-light small text-uppercase"><tr><th class="ps-3">Nombre / Concepto</th><th class="text-end pe-3">Detalle</th></tr></thead>
+                        <tbody>
+                            <tr *ngFor="let c of listaVisible">
+                                <td class="ps-3 fw-bold">{{ c.nombre }}</td>
+                                <!-- Render condicional de propiedad según objeto, simplificado para demo -->
+                                <td class="text-end pe-3">{{ c.base || c.jefe || c.tipo || '-' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </ng-container>
+
+            <!-- VISTAS VACÍAS -->
+            <ng-container *ngIf="isVacio">
+                 <div class="text-center py-5 fade-in-up"><c-icon [content]="icons.cilFolderOpen" size="4xl" class="text-secondary opacity-50 mb-3"></c-icon><h3 class="text-dark">{{ tituloVista }}</h3><p>Configuración disponible próximamente.</p></div>
+            </ng-container>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODALES ============ -->
+
+<!-- 1. NUEVO EMPLEADO -->
+<c-modal [visible]="modalEmpleadoVisible" (visibleChange)="modalEmpleadoVisible = $event" size="lg" backdrop="static">
+  <c-modal-header>
+      <h5 cModalTitle class="fw-bold">Ficha de Empleado</h5>
+      <button (click)="toggleModalEmpleado()" cButtonClose></button>
+  </c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="empleadoForm" cForm class="row g-3 p-2">
+        <div class="col-12 bg-light p-2 small rounded text-info border-info border">
+            <c-icon [content]="icons.cilCheckCircle"></c-icon> Al crear, se habilitará para el próximo cálculo de rol.
+        </div>
+        <div class="col-6"><label cLabel>Nombres</label><input cFormControl formControlName="nombres"></div>
+        <div class="col-6"><label cLabel>Apellidos</label><input cFormControl formControlName="apellido"></div>
+        <div class="col-4"><label cLabel>Cédula</label><input cFormControl formControlName="cedula"></div>
+        <div class="col-4"><label cLabel>Fecha Ingreso</label><input cFormControl type="date" formControlName="fechaIngreso"></div>
+        <div class="col-4"><label cLabel>Salario Base</label><input cFormControl type="number" formControlName="salario"></div>
+        <div class="col-6"><label cLabel>Cargo</label><select cSelect formControlName="cargo"><option>Contador</option><option>Vendedor</option><option>Asistente</option></select></div>
+        <div class="col-6"><label cLabel>Departamento</label><select cSelect formControlName="departamento"><option>Admin</option><option>Ventas</option></select></div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer><button cButton color="primary" (click)="guardarEmpleado()">Contratar</button></c-modal-footer>
+</c-modal>
+
+<!-- 2. CALCULO NOMINA -->
+<c-modal [visible]="modalNominaVisible" (visibleChange)="modalNominaVisible = $event" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Generar Nómina Mensual</h5><button (click)="toggleModalNomina()" cButtonClose></button></c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="nominaForm" class="row g-3">
+        <div class="alert alert-warning small">El proceso calculará sueldos, horas extras, aportes IESS y fondos de reserva para {{ totalEmpleados }} empleados activos.</div>
+        <div class="col-12"><label cLabel class="fw-bold">Periodo a liquidar</label><select cSelect formControlName="periodo"><option>Noviembre 2025</option><option>Diciembre 2025</option></select></div>
+        <div class="col-12"><label cLabel class="fw-bold">Fecha de Pago Prevista</label><input cFormControl type="date" formControlName="fechaPago"></div>
+        <div class="col-12"><label cLabel>Notas adicionales</label><textarea cFormControl rows="2" formControlName="notas"></textarea></div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer><button cButton color="success" class="text-white" (click)="ejecutarCalculoNomina()">Calcular y Contabilizar</button></c-modal-footer>
+</c-modal>
+
+<!-- 3. VACACION -->
+<c-modal [visible]="modalVacacionVisible" (visibleChange)="modalVacacionVisible = $event" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Solicitud Vacaciones</h5><button (click)="toggleModalVacacion()" cButtonClose></button></c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="vacacionForm" cForm class="row g-3">
+        <div class="col-12"><label cLabel>Empleado</label><select cSelect formControlName="empleado"><option *ngFor="let e of empleados" [value]="e.nombre">{{e.nombre}}</option></select></div>
+        <div class="col-6"><label cLabel>Días Solicitados</label><input cFormControl type="number" formControlName="dias"></div>
+        <div class="col-6"><label cLabel>Fecha Inicio</label><input cFormControl type="date" formControlName="fechaInicio"></div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer><button cButton color="info" class="text-white" (click)="guardarVacacion()">Crear Solicitud</button></c-modal-footer>
+</c-modal>
+
+<!-- 4. GENERICO CATALOGO -->
+<c-modal [visible]="modalCatalogoVisible" (visibleChange)="modalCatalogoVisible = $event" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Nuevo Registro</h5><button (click)="toggleModalCatalogo()" cButtonClose></button></c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="catalogoForm" class="row g-3">
+        <div class="col-12"><label cLabel>Nombre</label><input cFormControl formControlName="nombre"></div>
+        <div class="col-12"><label cLabel>Detalles</label><input cFormControl formControlName="detalle"></div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer><button cButton color="primary" (click)="guardarCatalogo()">Guardar</button></c-modal-footer>
+</c-modal>

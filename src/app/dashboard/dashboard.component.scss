@@ -1,0 +1,41 @@
+/* Animación para que sea elegante al entrar el mouse */
+.module-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 10px;
+    cursor: pointer;
+  
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
+      
+      .click-area span {
+         text-decoration: underline;
+      }
+    }
+}
+  
+/* Icono fantasma de fondo */
+.bg-icon-decor {
+    position: absolute;
+    bottom: -15px;
+    left: -15px; /* Lo ponemos a la izquierda abajo o derecha según gusto */
+    transform: rotate(15deg) scale(3.5);
+    opacity: 0.12;
+    pointer-events: none;
+}
+  
+.z-1 { z-index: 1; position: relative; }
+  
+/* --- PALETA DE DEGRADADOS (Estilo Moderno/Imagen) --- */
+.grad-purple { background: linear-gradient(45deg, #7450fe, #a27bfc); } /* Empresas */
+.grad-blue   { background: linear-gradient(45deg, #20c3ff, #4784ff); } /* Contactos */
+.grad-orange { background: linear-gradient(45deg, #ff8e61, #ff6060); } /* Oportunidades */
+.grad-green  { background: linear-gradient(45deg, #2bdca6, #1ac770); } /* Pipeline */
+
+/* Otros colores complementarios */
+.grad-cyan   { background: linear-gradient(45deg, #0dcaf0, #0aa2c0); }
+.grad-info   { background: linear-gradient(45deg, #6610f2, #6f42c1); }
+.grad-red    { background: linear-gradient(45deg, #dc3545, #b02a37); }
+.grad-indigo { background: linear-gradient(45deg, #3c4b64, #212529); }
+.grad-teal   { background: linear-gradient(45deg, #20c997, #198754); }
+.grad-pink   { background: linear-gradient(45deg, #d63384, #c92170); }

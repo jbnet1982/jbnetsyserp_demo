@@ -1,0 +1,241 @@
+<div class="container-fluid min-vh-100 bg-light">
+  
+  <!-- CABECERA -->
+  <div class="row py-3 border-bottom bg-white mb-4 shadow-sm align-items-center">
+    <div class="col-auto">
+      <button cButton color="light" routerLink="/" class="border" cTooltip="Volver"><c-icon [content]="icons.cilArrowLeft"></c-icon></button>
+    </div>
+    <div class="col">
+      <h4 class="mb-0 text-primary fw-bold">Módulo de Inventarios y Productos</h4>
+      <small class="text-secondary text-uppercase ls-1">JBNetsys ERP Edition - Logística</small>
+    </div>
+    <div class="col-auto">
+      <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">Bodega: Principal</span>
+    </div>
+  </div>
+
+  <div class="row g-4 px-3 pb-5">
+    
+    <!-- SIDEBAR -->
+    <div class="col-md-3 col-xl-2 fade-in-left">
+      <c-card class="border-0 shadow-sm h-100">
+        <div class="card-header bg-dark text-white py-3">
+          <h6 class="mb-0 fw-bold"><c-icon [content]="icons.cilFolderOpen" class="me-2"></c-icon> Menú Logístico</h6>
+        </div>
+        <div class="card-body p-0">
+          <c-accordion [alwaysOpen]="false" class="accordion-flush">
+            <c-accordion-item *ngFor="let grupo of menuEstructura; let i = index" [visible]="i === 0">
+              <ng-template cTemplateId="accordionHeader">
+                 <div class="fw-semibold small text-uppercase d-flex align-items-center gap-2">
+                    <c-icon [content]="grupo.icono === 'cilList' ? icons.cilList : (grupo.icono === 'cilSwapVertical' ? icons.cilSwapVertical : icons.cilChartLine)" class="text-primary"></c-icon>
+                    {{ grupo.titulo }}
+                 </div>
+              </ng-template>
+              <ng-template cTemplateId="accordionBody">
+                <div class="list-group list-group-flush">
+                  <button *ngFor="let sub of grupo.items" 
+                    class="list-group-item list-group-item-action border-0 ps-3 small py-2"
+                    [class.active]="vistaActual === sub.id"
+                    [class.fw-bold]="vistaActual === sub.id"
+                    (click)="seleccionarVista(sub)">
+                    • {{ sub.nombre }}
+                  </button>
+                </div>
+              </ng-template>
+            </c-accordion-item>
+          </c-accordion>
+        </div>
+        <div class="p-3 border-top mt-auto">
+             <button class="btn btn-outline-secondary w-100 btn-sm" (click)="volverDashboard()">
+               <c-icon [content]="icons.cilBarChart"></c-icon> Resumen
+             </button>
+        </div>
+      </c-card>
+    </div>
+
+    <!-- AREA TRABAJO -->
+    <div class="col-md-9 col-xl-10">
+      <div class="card border-0 shadow-sm min-vh-75">
+        
+        <!-- HEADER VISTA -->
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold text-dark-emphasis mb-0">{{ tituloVista }}</h5>
+            <div class="d-flex gap-2">
+                <button cButton color="secondary" variant="ghost" class="border" (click)="exportarPDF()">
+                   <c-icon [content]="icons.cilCloudDownload"></c-icon> PDF
+                </button>
+                
+                <!-- Botones Dinámicos -->
+                <button *ngIf="vistaActual === 'productos'" cButton color="primary" (click)="toggleModalProducto()"><c-icon [content]="icons.cilPlus"></c-icon> Nuevo Producto</button>
+                <button *ngIf="vistaActual === 'categorias'" cButton color="primary" (click)="toggleModalCategoria()"><c-icon [content]="icons.cilPlus"></c-icon> Categoría</button>
+                <button *ngIf="vistaActual === 'bodegas'" cButton color="primary" (click)="toggleModalBodega()"><c-icon [content]="icons.cilPlus"></c-icon> Bodega</button>
+                
+                <!-- Botones Movimientos -->
+                <button *ngIf="vistaActual.includes('entradas') || vistaActual.includes('salidas') || vistaActual.includes('transferencias')" 
+                        cButton color="primary" (click)="toggleModalMovimiento()">
+                        <c-icon [content]="icons.cilSwapVertical"></c-icon> Registrar Movimiento
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body bg-light-subtle">
+            
+            <!-- 1. DASHBOARD -->
+            <ng-container *ngIf="vistaActual === 'dashboard'">
+                <div class="row g-4 fade-in-up">
+                    <div class="col-md-4"><c-card class="border-0 shadow-sm border-top border-4 border-info p-4 text-center"><h2 class="display-6 fw-bold">{{ totalProductos }}</h2><small class="text-uppercase fw-bold text-muted">SKUs Activos</small></c-card></div>
+                    <div class="col-md-4"><c-card class="border-0 shadow-sm border-top border-4 border-success p-4 text-center"><h2 class="display-6 fw-bold">{{ valorInventario | currency }}</h2><small class="text-uppercase fw-bold text-muted">Valor Inventario</small></c-card></div>
+                    <div class="col-md-4"><c-card class="border-0 shadow-sm border-top border-4 border-warning p-4 text-center"><h2 class="display-6 fw-bold">{{ totalMovimientosMes }}</h2><small class="text-uppercase fw-bold text-muted">Movs. este Mes</small></c-card></div>
+                    <div class="col-12 mt-5 text-center text-muted"><h4>Sistema de Gestión de Stocks</h4><p>Control total de almacenes, costos y existencias.</p></div>
+                </div>
+            </ng-container>
+
+            <!-- 2. PRODUCTOS -->
+            <ng-container *ngIf="vistaActual === 'productos'">
+                 <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle"><thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Código</th><th>Producto</th><th>Categoría</th><th class="text-center">Stock</th><th class="text-end">Costo</th><th class="text-end">Precio</th><th class="text-center pe-3">Est</th></tr></thead><tbody>
+                    <tr *ngFor="let p of listaProductos">
+                        <td class="ps-3 fw-bold">{{p.codigo}}</td>
+                        <td><c-icon [content]="icons.cilBasket" class="me-2 text-warning"></c-icon>{{p.nombre}}</td>
+                        <td><span class="badge bg-light text-dark border">{{p.categoria}}</span></td>
+                        <td class="text-center fw-bold">{{p.stock}} {{p.unidad}}</td>
+                        <td class="text-end">{{p.costo | currency}}</td>
+                        <td class="text-end fw-bold text-primary">{{p.precio | currency}}</td>
+                        <td class="text-center pe-3"><c-badge color="success" shape="rounded-pill">Activo</c-badge></td>
+                    </tr>
+                    </tbody></table>
+                 </div>
+            </ng-container>
+
+            <!-- 3. CATEGORIAS -->
+            <ng-container *ngIf="vistaActual === 'categorias'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up"><table cTable hover class="mb-0 align-middle"><thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Código</th><th>Nombre Categoría</th><th>Cuenta Contable Asociada</th><th class="text-center pe-3">Estado</th></tr></thead><tbody><tr *ngFor="let c of categorias"><td class="ps-3 fw-bold">{{c.codigo}}</td><td>{{c.nombre}}</td><td>{{c.cuenta}}</td><td class="text-center pe-3"><c-badge color="success">Activo</c-badge></td></tr></tbody></table></div>
+            </ng-container>
+
+            <!-- 4. UNIDADES -->
+            <ng-container *ngIf="vistaActual === 'unidades'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up"><table cTable hover><thead class="bg-light small"><tr><th class="ps-3">Sigla</th><th>Nombre</th><th>Factor Conversión</th></tr></thead><tbody><tr *ngFor="let u of unidades"><td class="ps-3 fw-bold">{{u.codigo}}</td><td>{{u.nombre}}</td><td>{{u.factor}}</td></tr></tbody></table></div>
+            </ng-container>
+
+            <!-- 5. BODEGAS -->
+            <ng-container *ngIf="vistaActual === 'bodegas'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up"><table cTable hover class="mb-0 align-middle"><thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Cod</th><th>Nombre Bodega</th><th>Ubicación</th><th>Responsable</th><th class="text-center pe-3">Est</th></tr></thead><tbody><tr *ngFor="let b of bodegas"><td class="ps-3 fw-bold">{{b.codigo}}</td><td>{{b.nombre}}</td><td>{{b.ubicacion}}</td><td>{{b.responsable}}</td><td class="text-center pe-3"><c-badge color="success">Activo</c-badge></td></tr></tbody></table></div>
+            </ng-container>
+
+            <!-- 6. MOVIMIENTOS (Entradas, Salidas, Transfer) -->
+            <ng-container *ngIf="vistaActual === 'entradas' || vistaActual === 'salidas' || vistaActual === 'transferencias' || vistaActual === 'movimientos'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle">
+                        <thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Fecha/Cod</th><th>Tipo</th><th>Concepto / Glosa</th><th>Bodega Afectada</th><th class="text-end">Monto Total</th><th class="text-center pe-3">Integración</th></tr></thead>
+                        <tbody>
+                            <tr *ngFor="let m of movimientos">
+                                <td class="ps-3"><div class="fw-bold">{{m.fecha}}</div><div class="small text-muted">{{m.codigo}}</div></td>
+                                <td>
+                                    <c-badge *ngIf="m.tipo==='Entrada'" color="success">Entrada</c-badge>
+                                    <c-badge *ngIf="m.tipo==='Salida'" color="danger">Salida</c-badge>
+                                    <c-badge *ngIf="m.tipo==='Transferencia'" color="info">Traslado</c-badge>
+                                </td>
+                                <td>{{m.concepto}}</td>
+                                <td>{{m.bodega}}</td>
+                                <td class="text-end fw-bold">{{m.total | currency}}</td>
+                                <td class="text-center pe-3 text-success small fw-bold"><c-icon [content]="icons.cilCheckCircle"></c-icon> Contabilizado</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </ng-container>
+
+            <!-- 7. AJUSTES (Tabla vacía demo) -->
+            <ng-container *ngIf="vistaActual === 'ajustes'">
+                <div class="text-center py-5 fade-in-up"><c-icon [content]="icons.cilWarning" size="4xl" class="text-warning mb-3"></c-icon><h4>Ajustes Físicos</h4><button cButton color="warning" class="text-white">Nuevo Ajuste</button></div>
+            </ng-container>
+
+            <!-- 8. COSTEO -->
+            <ng-container *ngIf="vistaActual === 'costeo'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up"><table cTable hover class="mb-0 align-middle"><thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Periodo</th><th>Método</th><th>Fecha Cierre</th><th>Usuario</th><th class="text-center pe-3">Estado</th></tr></thead><tbody><tr *ngFor="let c of costeos"><td class="ps-3 fw-bold">{{c.periodo}}</td><td>{{c.metodo}}</td><td>{{c.fechaProc}}</td><td>{{c.usuario}}</td><td class="text-center pe-3"><c-badge color="dark">{{c.estado}}</c-badge></td></tr></tbody></table></div>
+            </ng-container>
+
+            <!-- 9. REPORTES: KARDEX -->
+            <ng-container *ngIf="vistaActual === 'kardex'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <div class="row mb-3"><div class="col-6"><select cSelect size="sm"><option>Producto: Laptop HP</option></select></div></div>
+                    <table cTable hover class="mb-0 align-middle table-sm border"><thead class="bg-dark text-white text-uppercase small"><tr><th class="ps-3">Fecha</th><th>Documento</th><th class="text-center">Tipo</th><th class="text-center">Ent</th><th class="text-center">Sal</th><th class="text-center">Saldo</th><th class="text-end">Costo U.</th><th class="text-end pe-3">Costo Total</th></tr></thead><tbody>
+                        <tr *ngFor="let k of kardex"><td class="ps-3">{{k.fecha}}</td><td>{{k.doc}}</td><td class="text-center"><c-badge color="light" class="text-dark">{{k.tipo}}</c-badge></td><td class="text-center text-success fw-bold">{{k.entrada>0?k.entrada:'-'}}</td><td class="text-center text-danger fw-bold">{{k.salida>0?k.salida:'-'}}</td><td class="text-center fw-bold bg-light">{{k.saldo}}</td><td class="text-end">{{k.costoU|currency}}</td><td class="text-end pe-3">{{k.total|currency}}</td></tr>
+                    </tbody></table>
+                </div>
+            </ng-container>
+
+            <!-- 10. REPORTES: EXISTENCIAS -->
+            <ng-container *ngIf="vistaActual === 'existencias'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up"><table cTable hover class="mb-0 align-middle"><thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Cod</th><th>Producto</th><th class="text-center">Bodega P.</th><th class="text-center">Bodega S.</th><th class="text-end pe-3">Total Global</th></tr></thead><tbody><tr *ngFor="let e of existencias"><td class="ps-3 fw-bold">{{e.codigo}}</td><td>{{e.producto}}</td><td class="text-center">{{e.bod1}}</td><td class="text-center">{{e.bod2}}</td><td class="text-end pe-3 fw-bold fs-5 text-primary">{{e.total}}</td></tr></tbody></table></div>
+            </ng-container>
+
+            <!-- 11. REPORTES: BAJO STOCK -->
+            <ng-container *ngIf="vistaActual === 'bajo-stock'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up"><div class="alert alert-danger d-flex align-items-center"><c-icon [content]="icons.cilWarning" class="me-2"></c-icon><strong>Alerta:</strong> Los siguientes productos están por debajo del mínimo.</div><table cTable hover class="mb-0 align-middle"><thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Cod</th><th>Producto</th><th class="text-center">Actual</th><th class="text-center">Mínimo</th><th class="text-center pe-3">Estado</th></tr></thead><tbody><tr *ngFor="let b of bajoStock"><td class="ps-3">{{b.codigo}}</td><td>{{b.producto}}</td><td class="text-center fw-bold text-danger">{{b.stockActual}}</td><td class="text-center">{{b.stockMin}}</td><td class="text-center pe-3"><c-badge color="danger">CRÍTICO</c-badge></td></tr></tbody></table></div>
+            </ng-container>
+
+            <!-- 12. OTROS -->
+            <ng-container *ngIf="!['dashboard', 'productos', 'categorias', 'unidades', 'bodegas', 'entradas', 'salidas', 'transferencias', 'ajustes', 'costeo', 'kardex', 'existencias', 'bajo-stock', 'valorizacion', 'movimientos'].includes(vistaActual)">
+                 <div class="text-center py-5 fade-in-up"><c-icon [content]="icons.cilFolderOpen" size="4xl" class="text-secondary opacity-50 mb-3"></c-icon><h3 class="text-dark">{{ tituloVista }}</h3><p>Reporte consolidado disponible en cierre de mes.</p></div>
+            </ng-container>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========== MODALES DE INVENTARIO =========== -->
+
+<!-- 1. PRODUCTO -->
+<c-modal [visible]="modalProductoVisible" (visibleChange)="handleModalProductoChange($event)" size="lg" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Nuevo Producto</h5><button (click)="toggleModalProducto()" cButtonClose></button></c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="productoForm" cForm class="row g-3">
+        <div class="col-4"><label cLabel>SKU / Código</label><input cFormControl formControlName="codigo"></div>
+        <div class="col-8"><label cLabel>Nombre Producto</label><input cFormControl formControlName="nombre"></div>
+        <div class="col-6"><label cLabel>Categoría</label><select cSelect formControlName="categoria"><option>Tecnología</option><option>Servicios</option></select></div>
+        <div class="col-6"><label cLabel>Unidad</label><select cSelect formControlName="unidad"><option>UND</option><option>KG</option></select></div>
+        <div class="col-4"><label cLabel>Costo Estándar</label><input cFormControl type="number" formControlName="costo"></div>
+        <div class="col-4"><label cLabel>Precio Venta</label><input cFormControl type="number" formControlName="precio"></div>
+        <div class="col-4"><label cLabel>Stock Inicial</label><input cFormControl type="number" formControlName="stockInicial"></div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer><button cButton color="primary" (click)="guardarProducto()">Guardar Producto</button></c-modal-footer>
+</c-modal>
+
+<!-- 2. CATEGORIA -->
+<c-modal [visible]="modalCategoriaVisible" (visibleChange)="handleModalCategoriaChange($event)" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Categoría</h5><button (click)="toggleModalCategoria()" cButtonClose></button></c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="categoriaForm" cForm class="row g-3"><div class="col-4"><label cLabel>Cód</label><input cFormControl formControlName="codigo"></div><div class="col-8"><label cLabel>Nombre</label><input cFormControl formControlName="nombre"></div><div class="col-12"><label cLabel>Cta. Contable (Integración)</label><input cFormControl formControlName="cuenta"></div></form>
+  </c-modal-body>
+  <c-modal-footer><button cButton color="primary" (click)="guardarCategoria()">Guardar</button></c-modal-footer>
+</c-modal>
+
+<!-- 3. BODEGA -->
+<c-modal [visible]="modalBodegaVisible" (visibleChange)="handleModalBodegaChange($event)" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Bodega</h5><button (click)="toggleModalBodega()" cButtonClose></button></c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="bodegaForm" cForm class="row g-3"><div class="col-12"><label cLabel>Nombre</label><input cFormControl formControlName="nombre"></div><div class="col-12"><label cLabel>Ubicación</label><input cFormControl formControlName="ubicacion"></div><div class="col-12"><label cLabel>Responsable</label><input cFormControl formControlName="responsable"></div></form>
+  </c-modal-body>
+  <c-modal-footer><button cButton color="primary" (click)="guardarBodega()">Guardar</button></c-modal-footer>
+</c-modal>
+
+<!-- 4. MOVIMIENTO (Entrada/Salida) -->
+<c-modal [visible]="modalMovimientoVisible" (visibleChange)="handleModalMovimientoChange($event)" size="lg" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Registrar Movimiento</h5><button (click)="toggleModalMovimiento()" cButtonClose></button></c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="movimientoForm" cForm class="row g-3 p-2">
+        <div class="col-6"><label cLabel>Tipo</label><select cSelect formControlName="tipo"><option>Entrada</option><option>Salida</option><option>Transferencia</option></select></div>
+        <div class="col-6"><label cLabel>Fecha</label><input cFormControl type="date" formControlName="fecha"></div>
+        <div class="col-12"><label cLabel>Concepto</label><input cFormControl formControlName="concepto"></div>
+        <div class="col-12"><hr class="my-2"><h6>Detalle (Simulado)</h6></div>
+        <div class="col-8"><input cFormControl placeholder="Buscar Producto..."></div>
+        <div class="col-2"><input cFormControl placeholder="Cant" type="number"></div>
+        <div class="col-2"><button cButton color="dark">Add</button></div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer><button cButton color="primary" (click)="guardarMovimiento()">Procesar e Integrar</button></c-modal-footer>
+</c-modal>

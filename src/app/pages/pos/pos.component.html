@@ -1,0 +1,243 @@
+<div class="container-fluid min-vh-100 bg-light">
+  
+  <!-- HEADER -->
+  <div class="row py-3 border-bottom bg-white mb-4 shadow-sm align-items-center">
+    <div class="col-auto">
+      <button cButton color="light" routerLink="/" class="border" cTooltip="Volver"><c-icon [content]="icons.cilArrowLeft"></c-icon></button>
+    </div>
+    <div class="col">
+      <h4 class="mb-0 text-primary fw-bold">Punto de Venta (POS)</h4>
+      <small class="text-secondary text-uppercase ls-1">JBNetsys ERP - Front Desk</small>
+    </div>
+    <div class="col-auto d-flex align-items-center gap-3">
+      <span class="badge bg-success px-3 py-2 rounded-pill">Caja Abierta</span>
+      <span class="fw-bold text-dark h5 mb-0">{{ totalVentasHoy | currency }}</span>
+    </div>
+  </div>
+
+  <div class="row g-4 px-3 pb-5">
+    
+    <!-- SIDEBAR (MENU) -->
+    <div class="col-md-3 col-xl-2 fade-in-left">
+      <c-card class="border-0 shadow-sm h-100">
+        <div class="card-header bg-primary text-white py-3">
+          <h6 class="mb-0 fw-bold"><c-icon [content]="icons.cilCart" class="me-2"></c-icon> Operaciones</h6>
+        </div>
+        <div class="card-body p-0">
+          <c-accordion [alwaysOpen]="false" class="accordion-flush">
+            <c-accordion-item *ngFor="let grupo of menuEstructura; let i = index" [visible]="i === 0">
+              <ng-template cTemplateId="accordionHeader">
+                 <div class="fw-semibold small text-uppercase d-flex align-items-center gap-2">
+                    <c-icon [content]="icons.cilMonitor" class="text-primary"></c-icon> {{ grupo.titulo }}
+                 </div>
+              </ng-template>
+              <ng-template cTemplateId="accordionBody">
+                <div class="list-group list-group-flush">
+                  <button *ngFor="let sub of grupo.items" class="list-group-item list-group-item-action border-0 ps-3 small py-2" [class.active]="vistaActual === sub.id" [class.fw-bold]="vistaActual === sub.id" (click)="seleccionarVista(sub)"> • {{ sub.nombre }} </button>
+                </div>
+              </ng-template>
+            </c-accordion-item>
+          </c-accordion>
+        </div>
+        <div class="p-3 border-top mt-auto">
+             <button class="btn btn-outline-secondary w-100 btn-sm" (click)="volverDashboard()">
+               <c-icon [content]="icons.cilChartLine"></c-icon> Dashboard
+             </button>
+        </div>
+      </c-card>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="col-md-9 col-xl-10">
+      
+      <!-- ============================= -->
+      <!-- VISTA 1: TERMINAL DE VENTA POS -->
+      <!-- ============================= -->
+      <ng-container *ngIf="isPOS">
+         <div class="row h-100">
+            
+            <!-- Panel Productos (Izquierda) -->
+            <div class="col-md-7 col-lg-8">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white border-bottom d-flex justify-content-between p-3">
+                        <div class="input-group" style="max-width: 300px;">
+                            <span class="input-group-text bg-light"><c-icon [content]="icons.cilSearch"></c-icon></span>
+                            <input type="text" class="form-control bg-light border-start-0" placeholder="Buscar producto / código de barras...">
+                        </div>
+                        <div>
+                            <button cButton color="info" class="text-white me-2" (click)="toggleModalMesas()"><c-icon [content]="icons.cilFastfood"></c-icon> Mesa</button>
+                            <button cButton color="light" class="border">Categorías</button>
+                        </div>
+                    </div>
+                    <div class="card-body bg-light overflow-auto" style="max-height: 70vh;">
+                        <div class="row g-3">
+                            <!-- GRID DE PRODUCTOS -->
+                            <div class="col-6 col-md-4 col-xl-3" *ngFor="let p of productosPOS" (click)="agregarProducto(p)">
+                                <div class="card h-100 border-0 shadow-sm product-card cursor-pointer text-center p-3 bg-white user-select-none position-relative">
+                                    <c-icon [content]="icons.cilBasket" size="3xl" class="mb-2 text-primary opacity-75"></c-icon>
+                                    <div class="fw-bold text-truncate">{{ p.nombre }}</div>
+                                    <div class="text-success fw-bold mt-1">{{ p.precio | currency }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Carrito / Ticket (Derecha) -->
+            <div class="col-md-5 col-lg-4">
+                <div class="card border-0 shadow h-100 d-flex flex-column">
+                    <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><c-icon [content]="icons.cilCart" class="me-2"></c-icon> Ticket Actual</h5>
+                        <button cButton color="light" size="sm" variant="ghost" class="text-white" (click)="limpiarCarrito()"><c-icon [content]="icons.cilTrash"></c-icon></button>
+                    </div>
+                    <div class="card-body p-0 overflow-auto flex-grow-1" style="background: #fffdf5;">
+                        <!-- Lista Items -->
+                        <table class="table table-borderless table-sm mb-0 align-middle table-hover">
+                            <thead class="border-bottom bg-white"><tr><th class="ps-3">Cant.</th><th>Producto</th><th class="text-end pe-3">Subtotal</th><th></th></tr></thead>
+                            <tbody>
+                                <tr *ngFor="let item of cart; let i = index">
+                                    <td class="ps-3 fw-bold">{{item.cantidad}}</td>
+                                    <td>{{item.nombre}} <div class="small text-muted">{{item.precio | currency}}</div></td>
+                                    <td class="text-end pe-3 fw-bold">{{item.subtotal | currency}}</td>
+                                    <td><c-icon [content]="icons.cilX" class="text-danger cursor-pointer" (click)="removerProducto(i)"></c-icon></td>
+                                </tr>
+                                <tr *ngIf="cart.length===0"><td colspan="4" class="text-center py-5 text-muted">Carrito vacío.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer bg-white border-top p-3">
+                        <div class="d-flex justify-content-between mb-1"><span>Subtotal:</span><span class="fw-bold">{{ (totalCart - impuestoCart) | currency }}</span></div>
+                        <div class="d-flex justify-content-between mb-2"><span>IVA (15%):</span><span class="text-muted">{{ impuestoCart | currency }}</span></div>
+                        <div class="d-flex justify-content-between mb-3"><h4 class="fw-bold">Total:</h4><h3 class="fw-bold text-primary">{{ totalCart | currency }}</h3></div>
+                        
+                        <div class="d-grid gap-2">
+                            <button cButton color="success" size="lg" class="text-white py-3 fw-bold shadow-sm" (click)="toggleModalCobrar()" [disabled]="cart.length===0">
+                                <c-icon [content]="icons.cilMoney" class="me-2"></c-icon> COBRAR
+                            </button>
+                            <div class="row g-2">
+                                <div class="col-6"><button cButton color="warning" class="w-100 text-white">Suspender</button></div>
+                                <div class="col-6"><button cButton color="secondary" class="w-100 text-white">Anular</button></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+         </div>
+      </ng-container>
+
+      <!-- ============================= -->
+      <!-- VISTA 2: ADMINISTRACIÓN / TABLAS -->
+      <!-- ============================= -->
+      <div class="card border-0 shadow-sm min-vh-75" *ngIf="!isPOS">
+          
+        <!-- HEADER ADMIN -->
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold text-dark-emphasis mb-0">{{ tituloVista }}</h5>
+            <div class="d-flex gap-2">
+                <button cButton color="secondary" variant="ghost" class="border" (click)="exportarPDF()"><c-icon [content]="icons.cilCloudDownload"></c-icon> PDF</button>
+                <!-- Botones Condicionales -->
+                <button *ngIf="btnAbrirCaja" cButton color="success" class="text-white" (click)="toggleModalApertura()"><c-icon [content]="icons.cilLockUnlocked"></c-icon> Abrir Caja</button>
+                <button *ngIf="btnNuevoMov" cButton color="primary" (click)="toggleModalMovimiento()"><c-icon [content]="icons.cilPlus"></c-icon> Registrar Mov.</button>
+            </div>
+        </div>
+
+        <div class="card-body bg-light-subtle">
+            
+            <!-- DASHBOARD -->
+            <ng-container *ngIf="isDashboard">
+                <div class="row g-4 fade-in-up">
+                    <div class="col-md-4"><c-card class="border-0 shadow-sm border-top border-4 border-success p-4 text-center"><h2 class="display-6 fw-bold">{{ totalVentasHoy | currency }}</h2><small class="text-muted text-uppercase">Ventas Hoy</small></c-card></div>
+                    <div class="col-md-4"><c-card class="border-0 shadow-sm border-top border-4 border-info p-4 text-center"><h2 class="display-6 fw-bold">{{ ticketsEmitidos }}</h2><small class="text-muted text-uppercase">Tickets</small></c-card></div>
+                    <div class="col-md-4"><c-card class="border-0 shadow-sm border-top border-4 border-primary p-4 text-center"><h2 class="display-6 fw-bold">{{ fondoCaja | currency }}</h2><small class="text-muted text-uppercase">Fondo Caja</small></c-card></div>
+                    <div class="col-12 mt-4 text-center">
+                        <button cButton color="dark" size="lg" class="px-5" (click)="seleccionarVista({id:'venta-touch', nombre:'Terminal POS'})"><c-icon [content]="icons.cilCart" class="me-2"></c-icon> IR A FACTURAR (POS)</button>
+                    </div>
+                </div>
+            </ng-container>
+
+            <!-- TABLAS GENÉRICAS (Usando listaVisible del TS) -->
+            <ng-container *ngIf="isTablas || isAnalisis">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle">
+                        <thead class="bg-light small text-secondary text-uppercase">
+                            <tr *ngIf="vistaActual.includes('historial')"> <th class="ps-3">Ticket</th> <th>Hora</th> <th>Cajero</th> <th class="text-end pe-3">Total</th> </tr>
+                            <tr *ngIf="vistaActual.includes('ranking')"> <th class="ps-3">Producto</th> <th class="text-center">Vendidos</th> <th class="text-end pe-3">Total ($)</th> </tr>
+                            <tr *ngIf="vistaActual.includes('ingreso')"> <th class="ps-3">Fecha</th> <th>Tipo</th> <th>Concepto</th> <th class="text-end pe-3">Monto</th> </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let i of listaVisible">
+                                <!-- Condicionales para mapear campos según lista -->
+                                <td class="ps-3 fw-bold">{{ i.ticket || i.producto || i.fecha }}</td>
+                                <td>{{ i.fecha || i.cant || i.tipo }}</td>
+                                <td *ngIf="i.cajero || i.concepto">{{ i.cajero || i.concepto }}</td>
+                                <td class="text-end pe-3 fw-bold">{{ i.total || i.monto | currency }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </ng-container>
+            
+            <!-- ARQUEO Y CIERRE -->
+            <ng-container *ngIf="isCierre">
+                <div class="bg-white rounded p-5 text-center shadow-sm fade-in-up border border-dashed">
+                    <c-icon [content]="icons.cilLockLocked" size="4xl" class="text-warning mb-3"></c-icon>
+                    <h3>Arqueo de Caja</h3>
+                    <p class="text-muted">Inicie el conteo de billetes y monedas para generar el cierre Z.</p>
+                    <button cButton color="warning" class="px-4">Iniciar Conteo</button>
+                </div>
+            </ng-container>
+            
+            <!-- VACIO -->
+            <ng-container *ngIf="isVacio && !isPOS">
+                <div class="text-center py-5 text-muted"><c-icon [content]="icons.cilFolderOpen" size="4xl" class="opacity-25 mb-3"></c-icon><h5>Sin datos</h5></div>
+            </ng-container>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- =========== MODALES =========== -->
+
+<!-- 1. COBRO (PAGO) -->
+<c-modal [visible]="modalCobrarVisible" (visibleChange)="modalCobrarVisible=$event" size="lg" backdrop="static">
+  <c-modal-header><h5 cModalTitle class="fw-bold">Total a Pagar: {{totalCart | currency}}</h5><button (click)="modalCobrarVisible=false" cButtonClose></button></c-modal-header>
+  <c-modal-body>
+      <form [formGroup]="cobroForm" class="row g-3 p-2">
+          <div class="col-6 text-center border-end"><h1 class="display-5 fw-bold text-success">{{ totalCart | currency }}</h1><div class="text-muted">Total</div></div>
+          <div class="col-6"><label cLabel>Método</label><select cSelect formControlName="metodo"><option>Efectivo</option><option>Tarjeta</option><option>QR</option></select><label cLabel class="mt-2">Cliente</label><select cSelect formControlName="cliente"><option>Consumidor Final</option><option>Juan Perez (999...)</option></select></div>
+          <div class="col-12 mt-3" *ngIf="cobroForm.value.metodo==='Efectivo'"><label cLabel class="fw-bold h5">Recibido:</label><input cFormControl type="number" formControlName="efectivo" class="form-control-lg text-end"></div>
+      </form>
+  </c-modal-body>
+  <c-modal-footer><button cButton color="success" class="text-white w-100 py-2 fs-5" (click)="procesarCobro()">CONFIRMAR COBRO</button></c-modal-footer>
+</c-modal>
+
+<!-- 2. APERTURA -->
+<c-modal [visible]="modalAperturaVisible" (visibleChange)="modalAperturaVisible=$event" backdrop="static">
+    <c-modal-header><h5 cModalTitle>Apertura de Caja</h5><button (click)="modalAperturaVisible=false" cButtonClose></button></c-modal-header>
+    <c-modal-body><form [formGroup]="aperturaForm"><label cLabel>Monto Inicial</label><input cFormControl type="number" formControlName="monto"></form></c-modal-body>
+    <c-modal-footer><button cButton color="primary" (click)="guardarApertura()">Abrir Turno</button></c-modal-footer>
+</c-modal>
+
+<!-- 3. MOVIMIENTOS -->
+<c-modal [visible]="modalMovimientoVisible" (visibleChange)="modalMovimientoVisible=$event" backdrop="static">
+    <c-modal-header><h5 cModalTitle>Entrada / Salida</h5><button (click)="modalMovimientoVisible=false" cButtonClose></button></c-modal-header>
+    <c-modal-body><form [formGroup]="movimientoForm" class="row g-3"><div class="col-12"><label>Tipo</label><select cSelect formControlName="tipo"><option>Egreso</option><option>Ingreso</option></select></div><div class="col-8"><label>Concepto</label><input cFormControl formControlName="concepto"></div><div class="col-4"><label>Monto</label><input cFormControl type="number" formControlName="monto"></div></form></c-modal-body>
+    <c-modal-footer><button cButton color="primary" (click)="guardarMovimiento()">Guardar</button></c-modal-footer>
+</c-modal>
+
+<!-- 4. MESAS -->
+<c-modal [visible]="modalMesaVisible" (visibleChange)="modalMesaVisible=$event" size="lg" backdrop="static">
+    <c-modal-header><h5 cModalTitle>Selección de Mesa</h5><button (click)="modalMesaVisible=false" cButtonClose></button></c-modal-header>
+    <c-modal-body>
+        <div class="row g-3">
+            <div class="col-3" *ngFor="let m of [1,2,3,4,5,6,7,8]">
+                <div class="card text-center p-4 cursor-pointer shadow-sm bg-light border" (click)="seleccionarMesa(m)">
+                    <h3>{{m}}</h3><small>Libre</small>
+                </div>
+            </div>
+        </div>
+    </c-modal-body>
+</c-modal>

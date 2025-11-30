@@ -1,0 +1,53 @@
+<div class="container-fluid p-4">
+  
+  <!-- CABECERA: Centrada y con márgenes ajustados -->
+  <div class="row mb-5 mt-4">
+    <div class="col-12 text-center">
+      <h2 class="text-uppercase fw-bold text-dark-emphasis ls-1">Panel de Control ERP</h2>
+      <p class="text-secondary mb-0">Bienvenido al sistema de gestión JBNetsys</p>
+    </div>
+  </div>
+
+  <!-- GRID DE TARJETAS -->
+  <div class="row g-4">
+    <!-- Loop que recorre tus módulos definidos en el TS -->
+    <div class="col-12 col-md-6 col-lg-4 col-xl-3" *ngFor="let mod of modules">
+      
+      <!-- CARD: 
+           1. [routerLink] usa la propiedad 'link' del TS ('/contabilidad', etc).
+           2. 'position-relative' y 'overflow-hidden' para contener el icono de fondo.
+      -->
+      <div class="card h-100 border-0 shadow-sm module-card text-white position-relative overflow-hidden" 
+           [ngClass]="mod.color" 
+           [routerLink]="mod.link ? [mod.link] : []">
+        
+        <!-- ICONO DE FONDO (Decorativo / Fantasma) -->
+        <c-icon [name]="mod.icon" size="3xl" class="bg-icon-decor"></c-icon>
+
+        <!-- CUERPO DE LA TARJETA -->
+        <div class="card-body p-4 d-flex flex-column justify-content-between position-relative z-1">
+          
+          <!-- Sección Superior: Título + Descripción + Icono Pequeño -->
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <h5 class="fw-bold mb-0 text-uppercase text-truncate">{{ mod.title }}</h5>
+              <span class="small opacity-75 d-block mt-1">{{ mod.desc }}</span>
+            </div>
+            <!-- Icono superior derecha -->
+            <c-icon [name]="mod.icon" size="xl" class="opacity-100"></c-icon>
+          </div>
+          
+          <!-- Sección Inferior: Botón de Acceder (Simulado) -->
+          <div class="mt-4 pt-3 border-top border-white border-opacity-25">
+             <div class="d-flex justify-content-between align-items-center click-area">
+                <span class="small fw-semibold text-uppercase">Acceder</span>
+                <span class="fs-4 lh-1 pb-1">&rarr;</span>
+             </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

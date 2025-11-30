@@ -1,0 +1,210 @@
+<div class="container-fluid min-vh-100 bg-light">
+  
+  <!-- CABECERA PRINCIPAL -->
+  <div class="row py-3 border-bottom bg-white mb-4 shadow-sm align-items-center">
+    <div class="col-auto">
+      <button cButton color="light" routerLink="/" class="border" cTooltip="Volver">
+        <c-icon [content]="icons.cilArrowLeft"></c-icon>
+      </button>
+    </div>
+    <div class="col">
+      <h4 class="mb-0 text-primary fw-bold">Módulo Cuentas por Cobrar (CxC)</h4>
+      <small class="text-secondary text-uppercase ls-1">JBNetsys ERP - Financiero</small>
+    </div>
+    <div class="col-auto">
+      <span class="badge bg-danger px-3 py-2 rounded-pill">Mora Total: {{ 105 | number }} días</span>
+    </div>
+  </div>
+
+  <div class="row g-4 px-3 pb-5">
+    
+    <!-- MENU LATERAL -->
+    <div class="col-md-3 col-xl-2 fade-in-left">
+      <c-card class="border-0 shadow-sm h-100">
+        <div class="card-header bg-primary text-white py-3">
+          <h6 class="mb-0 fw-bold"><c-icon [content]="icons.cilFolderOpen" class="me-2"></c-icon> Navegación CxC</h6>
+        </div>
+        <div class="card-body p-0">
+          <c-accordion [alwaysOpen]="false" class="accordion-flush">
+            <c-accordion-item *ngFor="let grupo of menuEstructura; let i = index" [visible]="i === 0">
+              <ng-template cTemplateId="accordionHeader">
+                 <div class="fw-semibold small text-uppercase d-flex align-items-center gap-2">
+                    <c-icon [content]="grupo.icono === 'cilList' ? icons.cilList : (grupo.icono === 'cilMoney' ? icons.cilMoney : icons.cilChartLine)" class="text-primary"></c-icon>
+                    {{ grupo.titulo }}
+                 </div>
+              </ng-template>
+              <ng-template cTemplateId="accordionBody">
+                <div class="list-group list-group-flush">
+                  <button *ngFor="let sub of grupo.items" 
+                    class="list-group-item list-group-item-action border-0 ps-3 small py-2"
+                    [class.active]="vistaActual === sub.id"
+                    [class.fw-bold]="vistaActual === sub.id"
+                    (click)="seleccionarVista(sub)">
+                    • {{ sub.nombre }}
+                  </button>
+                </div>
+              </ng-template>
+            </c-accordion-item>
+          </c-accordion>
+        </div>
+        <div class="p-3 border-top mt-auto">
+             <button class="btn btn-outline-secondary w-100 btn-sm" (click)="volverDashboard()">
+               <c-icon [content]="icons.cilChartLine"></c-icon> Ir al Resumen
+             </button>
+        </div>
+      </c-card>
+    </div>
+
+    <!-- AREA DE CONTENIDO -->
+    <div class="col-md-9 col-xl-10">
+      <div class="card border-0 shadow-sm min-vh-75">
+        
+        <!-- HEADER VISTA -->
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold text-dark-emphasis mb-0">{{ tituloVista }}</h5>
+            
+            <div class="d-flex gap-2">
+                <button cButton color="secondary" variant="ghost" class="border" (click)="exportarPDF()">
+                   <c-icon [content]="icons.cilCloudDownload"></c-icon> PDF
+                </button>
+                
+                <!-- Botonera Dinámica -->
+                <button *ngIf="vistaActual === 'registro-pagos' || vistaActual === 'aplicacion'" cButton color="success" class="text-white" (click)="toggleModalPago()"><c-icon [content]="icons.cilMoney"></c-icon> Nuevo Cobro</button>
+                <button *ngIf="vistaActual === 'clientes'" cButton color="primary" (click)="toggleModalCliente()"><c-icon [content]="icons.cilPlus"></c-icon> Nuevo Cliente</button>
+                <button *ngIf="vistaActual === 'limites'" cButton color="warning" (click)="toggleModalLimite()"><c-icon [content]="icons.cilPencil"></c-icon> Ajustar Límite</button>
+                <button *ngIf="vistaActual === 'cobranzas'" cButton color="primary" (click)="toggleModalGestion()"><c-icon [content]="icons.cilPhone"></c-icon> Nueva Gestión</button>
+                <button *ngIf="vistaActual === 'reversion'" cButton color="danger" class="text-white" (click)="toggleModalReversion()"><c-icon [content]="icons.cilActionUndo"></c-icon> Reversar</button>
+            </div>
+        </div>
+
+        <div class="card-body bg-light-subtle">
+            
+            <!-- 1. DASHBOARD -->
+            <ng-container *ngIf="vistaActual === 'dashboard'">
+                <div class="row g-4 fade-in-up">
+                    <div class="col-md-4"><c-card class="border-0 shadow-sm border-top border-4 border-info p-4 text-center"><h2 class="display-6 fw-bold">{{ totalCartera | currency }}</h2><small class="text-uppercase fw-bold text-muted">Total Cartera</small></c-card></div>
+                    <div class="col-md-4"><c-card class="border-0 shadow-sm border-top border-4 border-danger p-4 text-center"><h2 class="display-6 fw-bold">{{ totalVencido | currency }}</h2><small class="text-uppercase fw-bold text-muted">Vencido > 30 días</small></c-card></div>
+                    <div class="col-md-4"><c-card class="border-0 shadow-sm border-top border-4 border-success p-4 text-center"><h2 class="display-6 fw-bold">{{ cobradoMes | currency }}</h2><small class="text-uppercase fw-bold text-muted">Recaudado este Mes</small></c-card></div>
+                    <div class="col-12 mt-5 text-center text-muted"><h4>Gestión de Tesorería</h4><p>Control integral de cuentas por cobrar.</p></div>
+                </div>
+            </ng-container>
+
+            <!-- 2. CATÁLOGO: CLIENTES Y CRÉDITO -->
+            <ng-container *ngIf="vistaActual === 'clientes' || vistaActual === 'limites'">
+                 <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle"><thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Código</th><th>Cliente</th><th>Cupo Crédito</th><th>Usado</th><th>Disponible</th><th class="text-center">Estado</th><th class="text-end pe-3">Acción</th></tr></thead><tbody>
+                        <tr *ngFor="let c of clientes">
+                            <td class="ps-3 fw-bold">{{c.codigo}}</td>
+                            <td>{{c.nombre}}<br><small class="text-muted">{{c.ruc}}</small></td>
+                            <td class="fw-bold">{{c.limite|currency}}</td>
+                            <td class="text-warning">{{c.usado|currency}}</td>
+                            <td class="text-success fw-bold">{{c.disponible|currency}}</td>
+                            <td class="text-center"><c-badge color="success">Activo</c-badge></td>
+                            <td class="text-end pe-3"><c-icon [content]="icons.cilDescription" class="text-secondary cursor-pointer"></c-icon></td>
+                        </tr>
+                    </tbody></table>
+                 </div>
+            </ng-container>
+
+            <!-- 3. CONDICIONES PAGO -->
+            <ng-container *ngIf="vistaActual === 'condiciones'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up"><table cTable hover class="mb-0"><thead class="bg-light small"><tr><th class="ps-3">Cod</th><th>Descripción</th><th>Días Vencimiento</th></tr></thead><tbody><tr *ngFor="let c of condiciones"><td class="ps-3">{{c.codigo}}</td><td>{{c.nombre}}</td><td>{{c.dias}} Días</td></tr></tbody></table></div>
+            </ng-container>
+
+            <!-- 4. GESTIÓN: ESTADOS CTA / ANTIGUEDAD / VENCIDAS (Comparten tabla Aging) -->
+            <ng-container *ngIf="['estados-cuenta', 'antiguedad', 'vencidas', 'reporte-antiguedad'].includes(vistaActual)">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle table-sm border-start border-end">
+                       <thead class="bg-light text-uppercase small text-secondary">
+                          <tr><th class="ps-3">Cliente</th><th>Documento</th><th>Emisión</th><th>Vence</th><th>Días Mora</th><th>Tramo Aging</th><th class="text-end pe-3">Saldo</th></tr>
+                       </thead>
+                       <tbody>
+                          <tr *ngFor="let s of saldos" [ngClass]="{'bg-danger-subtle': s.mora > 0 && s.estado === 'Vencido'}">
+                             <td class="ps-3 fw-bold text-dark">{{ s.cliente }}</td>
+                             <td>{{ s.doc }}</td>
+                             <td>{{ s.emision }}</td>
+                             <td class="fw-bold text-dark">{{ s.vcto }}</td>
+                             <td class="text-center"><c-badge [color]="s.mora>0 ? 'danger' : 'success'">{{ s.mora }}</c-badge></td>
+                             <td><small>{{ s.tramo }}</small></td>
+                             <td class="text-end pe-3 fw-bold">{{ s.saldo | currency }}</td>
+                          </tr>
+                       </tbody>
+                    </table>
+                </div>
+            </ng-container>
+
+            <!-- 5. REGISTRO PAGOS -->
+            <ng-container *ngIf="vistaActual === 'registro-pagos' || vistaActual === 'aplicacion'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up"><table cTable hover class="mb-0 align-middle"><thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Fecha</th><th>Recibo</th><th>Cliente</th><th>Forma Pago</th><th class="text-end">Monto</th><th class="text-center pe-3">Banco Destino</th></tr></thead><tbody><tr *ngFor="let c of cobros"><td class="ps-3">{{c.fecha}}</td><td class="fw-bold">{{c.recibo}}</td><td>{{c.cliente}}</td><td>{{c.forma}} <small class="text-muted">({{c.ref}})</small></td><td class="text-end fw-bold text-success">{{c.monto|currency}}</td><td class="text-center pe-3">{{c.banco}}</td></tr></tbody></table></div>
+            </ng-container>
+
+            <!-- 6. GESTIÓN COBRANZAS (CRM) -->
+            <ng-container *ngIf="vistaActual === 'cobranzas' || vistaActual === 'historial-cobranzas'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle"><thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Fecha Gestión</th><th>Cliente</th><th>Acción</th><th>Resultado / Notas</th><th>Usuario</th></tr></thead><tbody>
+                        <tr *ngFor="let g of gestiones"><td class="ps-3">{{g.fecha}}</td><td class="fw-bold">{{g.cliente}}</td><td><div class="d-flex align-items-center"><c-icon [content]="g.tipo==='Llamada'?icons.cilPhone:icons.cilEnvelopeLetter" class="me-2"></c-icon>{{g.tipo}}</div></td><td><div class="fw-bold">{{g.resultado}}</div><small class="text-muted">{{g.nota}}</small></td><td>{{g.usuario}}</td></tr>
+                    </tbody></table>
+                </div>
+            </ng-container>
+
+            <!-- 7. REVERSIÓN (Lista vacía demo) -->
+            <ng-container *ngIf="vistaActual === 'reversion'">
+                <div class="text-center py-5 fade-in-up"><c-icon [content]="icons.cilActionUndo" size="4xl" class="text-danger mb-3"></c-icon><h4 class="text-danger">Zona de Anulación</h4><p>Seleccione un pago para reversar su impacto en cartera y contabilidad.</p><button cButton color="danger" variant="outline" (click)="toggleModalReversion()">Buscar Pago</button></div>
+            </ng-container>
+
+            <!-- 8. PLACEHOLDER -->
+            <ng-container *ngIf="!['dashboard', 'clientes', 'limites', 'condiciones', 'estados-cuenta', 'antiguedad', 'vencidas', 'reporte-antiguedad', 'registro-pagos', 'aplicacion', 'cobranzas', 'historial-cobranzas', 'reversion'].includes(vistaActual)">
+                 <div class="text-center py-5 fade-in-up"><c-icon [content]="icons.cilFolderOpen" size="4xl" class="text-secondary opacity-50 mb-3"></c-icon><h3 class="text-dark">Sección vacía</h3><p>No hay datos.</p></div>
+            </ng-container>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========== MODALES =========== -->
+
+<!-- 1. PAGO -->
+<c-modal [visible]="liveModalVisible" (visibleChange)="liveModalVisible=$event" size="lg" backdrop="static">
+  <c-modal-header><h5 cModalTitle class="fw-bold">Registrar Recaudación</h5><button (click)="toggleModalPago()" cButtonClose></button></c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="pagoForm" cForm class="row g-3">
+        <div class="col-12 alert alert-success small mb-0"><c-icon [content]="icons.cilCheckCircle"></c-icon> Integración Activa: Este proceso generará el asiento contable automáticamente.</div>
+        <div class="col-8"><label cLabel>Cliente</label><select cSelect formControlName="cliente"><option value="">Buscar...</option><option *ngFor="let c of clientes" [value]="c.nombre">{{c.nombre}}</option></select></div>
+        <div class="col-4"><label cLabel>Fecha</label><input cFormControl type="date" formControlName="fecha"></div>
+        <div class="col-12"><label cLabel>Factura a Pagar</label><select cSelect formControlName="documento"><option>FAC-540 ($5,000.00)</option><option>FAC-541 ($575.00)</option></select></div>
+        <div class="col-4"><label cLabel>Forma Pago</label><select cSelect formControlName="forma"><option>Transferencia</option><option>Cheque</option><option>Efectivo</option></select></div>
+        <div class="col-4"><label cLabel>Monto</label><input cFormControl type="number" formControlName="monto"></div>
+        <div class="col-4"><label cLabel>Referencia / N°</label><input cFormControl formControlName="referencia"></div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer><button cButton color="primary" (click)="guardarPago()">Aplicar Pago</button></c-modal-footer>
+</c-modal>
+
+<!-- 2. CLIENTE -->
+<c-modal [visible]="modalClienteVisible" (visibleChange)="modalClienteVisible=$event" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Nuevo Cliente</h5><button (click)="toggleModalCliente()" cButtonClose></button></c-modal-header>
+  <c-modal-body><form [formGroup]="clienteForm" cForm class="row g-3"><div class="col-12"><label cLabel>Razón Social</label><input cFormControl formControlName="nombre"></div><div class="col-6"><label cLabel>RUC</label><input cFormControl formControlName="ruc"></div><div class="col-6"><label cLabel>Límite ($)</label><input cFormControl type="number" formControlName="limite"></div></form></c-modal-body>
+  <c-modal-footer><button cButton (click)="guardarCliente()">Guardar</button></c-modal-footer>
+</c-modal>
+
+<!-- 3. GESTION -->
+<c-modal [visible]="modalGestionVisible" (visibleChange)="modalGestionVisible=$event" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Registro Cobranza</h5><button (click)="toggleModalGestion()" cButtonClose></button></c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="gestionForm" cForm class="row g-3">
+        <div class="col-12"><label cLabel>Cliente Contactado</label><select cSelect formControlName="cliente"><option *ngFor="let c of clientes" [value]="c.nombre">{{c.nombre}}</option></select></div>
+        <div class="col-6"><label cLabel>Vía</label><select cSelect formControlName="tipo"><option>Llamada</option><option>WhatsApp</option><option>Correo</option></select></div>
+        <div class="col-6"><label cLabel>Fecha Próxima</label><input cFormControl type="date" formControlName="fechaPromesa"></div>
+        <div class="col-12"><label cLabel>Resultado / Notas</label><textarea cFormControl formControlName="nota" rows="3"></textarea></div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer><button cButton color="primary" (click)="guardarGestion()">Registrar Gestión</button></c-modal-footer>
+</c-modal>
+
+<!-- 4. LIMITE -->
+<c-modal [visible]="modalLimiteVisible" (visibleChange)="modalLimiteVisible=$event" backdrop="static"><c-modal-body>Formulario ampliación cupo crédito...</c-modal-body><c-modal-footer><button cButton (click)="guardarLimite()">Aprobar</button></c-modal-footer></c-modal>
+
+<!-- 5. REVERSION -->
+<c-modal [visible]="modalReversionVisible" (visibleChange)="modalReversionVisible=$event" backdrop="static"><c-modal-body>¿Seguro de reversar el pago REC-1001?</c-modal-body><c-modal-footer><button cButton color="danger" class="text-white" (click)="ejecutarReversion()">Confirmar Reversión</button></c-modal-footer></c-modal>

@@ -1,0 +1,308 @@
+<div class="container-fluid min-vh-100 bg-light">
+  
+  <!-- CABECERA SUPERIOR -->
+  <div class="row py-3 border-bottom bg-white mb-4 shadow-sm align-items-center">
+    <div class="col-auto">
+      <button cButton color="light" routerLink="/" class="border" cTooltip="Volver al Inicio">
+        <c-icon [content]="icons.cilArrowLeft"></c-icon>
+      </button>
+    </div>
+    <div class="col">
+      <h4 class="mb-0 text-primary fw-bold">Módulo Gestión de Facturación</h4>
+      <small class="text-secondary text-uppercase ls-1">JBNetsys ERP Edition - Ventas</small>
+    </div>
+    <div class="col-auto">
+      <span class="badge bg-success px-3 py-2 rounded-pill">Caja Abierta</span>
+    </div>
+  </div>
+
+  <div class="row g-4 px-3 pb-5">
+    
+    <!-- MENÚ NAVEGACIÓN (IZQUIERDA) -->
+    <div class="col-md-3 col-xl-2 fade-in-left">
+      <c-card class="border-0 shadow-sm h-100">
+        <div class="card-header bg-dark text-white py-3">
+          <h6 class="mb-0 fw-bold"><c-icon [content]="icons.cilBriefcase" class="me-2"></c-icon> Menú Ventas</h6>
+        </div>
+        <div class="card-body p-0">
+          <c-accordion [alwaysOpen]="false" class="accordion-flush">
+            <c-accordion-item *ngFor="let grupo of menuEstructura; let i = index" [visible]="i === 0">
+              <ng-template cTemplateId="accordionHeader">
+                 <div class="fw-semibold small text-uppercase d-flex align-items-center gap-2">
+                    <c-icon [content]="grupo.icono === 'cilBook' ? icons.cilBook : (grupo.icono === 'cilCart' ? icons.cilCart : icons.cilChartLine)" class="text-primary"></c-icon>
+                    {{ grupo.titulo }}
+                 </div>
+              </ng-template>
+              <ng-template cTemplateId="accordionBody">
+                <div class="list-group list-group-flush">
+                  <button *ngFor="let sub of grupo.items" 
+                    class="list-group-item list-group-item-action border-0 ps-3 small py-2"
+                    [class.active]="vistaActual === sub.id"
+                    [class.fw-bold]="vistaActual === sub.id"
+                    (click)="seleccionarVista(sub)">
+                    • {{ sub.nombre }}
+                  </button>
+                </div>
+              </ng-template>
+            </c-accordion-item>
+          </c-accordion>
+        </div>
+        <div class="p-3 border-top mt-auto">
+             <button class="btn btn-outline-secondary w-100 btn-sm" (click)="volverDashboard()">
+               <c-icon [content]="icons.cilChartLine"></c-icon> Ir al Resumen
+             </button>
+        </div>
+      </c-card>
+    </div>
+
+    <!-- ÁREA DE TRABAJO (DERECHA) -->
+    <div class="col-md-9 col-xl-10">
+      <div class="card border-0 shadow-sm min-vh-75">
+        
+        <!-- HEADER VISTA DINÁMICA -->
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold text-dark-emphasis mb-0">{{ tituloVista }}</h5>
+            
+            <div class="d-flex gap-2">
+                <button cButton color="secondary" variant="ghost" class="border" (click)="exportarPDF()">
+                   <c-icon [content]="icons.cilCloudDownload"></c-icon> PDF
+                </button>
+                
+                <!-- BOTONES DE ACCIÓN SEGÚN VISTA -->
+                <button *ngIf="vistaActual === 'clientes'" cButton color="primary" (click)="toggleModalCliente()"><c-icon [content]="icons.cilPlus"></c-icon> Nuevo Cliente</button>
+                
+                <button *ngIf="vistaActual === 'facturas'" cButton color="primary" (click)="toggleModalFactura()"><c-icon [content]="icons.cilPlus"></c-icon> Emitir Factura</button>
+                
+                <button *ngIf="vistaActual === 'cotizaciones'" cButton color="primary" (click)="toggleModalGenerico()"><c-icon [content]="icons.cilPlus"></c-icon> Crear Cotización</button>
+                
+                <button *ngIf="vistaActual === 'pagos' || vistaActual === 'recibos'" cButton color="primary" (click)="toggleModalPago()"><c-icon [content]="icons.cilMoney"></c-icon> Registrar Pago</button>
+            </div>
+        </div>
+
+        <div class="card-body bg-light-subtle">
+            
+            <!-- 1. VISTA DASHBOARD -->
+            <ng-container *ngIf="vistaActual === 'dashboard'">
+                <div class="row g-4 fade-in-up">
+                    <div class="col-md-4">
+                        <c-card class="border-0 shadow-sm border-top border-4 border-success p-4 text-center">
+                          <h2 class="display-6 fw-bold">{{ ventasMes | currency }}</h2>
+                          <small class="text-uppercase fw-bold text-muted">Ventas del Mes</small>
+                        </c-card>
+                    </div>
+                    <div class="col-md-4">
+                        <c-card class="border-0 shadow-sm border-top border-4 border-warning p-4 text-center">
+                          <h2 class="display-6 fw-bold">{{ cuentasPorCobrar | currency }}</h2>
+                          <small class="text-uppercase fw-bold text-muted">Por Cobrar</small>
+                        </c-card>
+                    </div>
+                    <div class="col-md-4">
+                        <c-card class="border-0 shadow-sm border-top border-4 border-danger p-4 text-center">
+                          <h2 class="display-6 fw-bold">{{ facturasPendientes }}</h2>
+                          <small class="text-uppercase fw-bold text-muted">Docs. Vencidos</small>
+                        </c-card>
+                    </div>
+                    <div class="col-12 mt-5 text-center text-muted">
+                        <c-icon [content]="icons.cilChartLine" size="4xl" class="mb-3 opacity-25"></c-icon>
+                        <h4>JBNetsys ERP - Comercial</h4>
+                        <p>Gestión completa de facturación e ingresos.</p>
+                    </div>
+                </div>
+            </ng-container>
+
+            <!-- ============ 2. CATÁLOGOS ============ -->
+
+            <!-- Clientes -->
+            <ng-container *ngIf="vistaActual === 'clientes'">
+                 <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle">
+                        <thead class="bg-light text-uppercase small text-secondary">
+                            <tr>
+                                <th class="ps-3">RUC/CI</th>
+                                <th>Razón Social</th>
+                                <th>Teléfono</th>
+                                <th>Ubicación</th>
+                                <th class="text-end pe-3">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let c of clientes">
+                                <td class="ps-3 text-primary fw-bold">{{ c.ruc }}</td>
+                                <td><div class="d-flex align-items-center"><c-icon [content]="icons.cilUser" class="me-2 text-secondary"></c-icon>{{ c.nombre }}</div></td>
+                                <td>{{ c.telefono }}</td>
+                                <td class="small">{{ c.direccion }}</td>
+                                <td class="text-end pe-3"><c-badge [color]="c.estado === 'Activo' ? 'success' : 'secondary'" shape="rounded-pill">{{ c.estado }}</c-badge></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                 </div>
+            </ng-container>
+
+            <!-- Condiciones Pago -->
+            <ng-container *ngIf="vistaActual === 'condiciones'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle"><thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Código</th><th>Descripción</th><th class="text-center pe-3">Días Crédito</th></tr></thead><tbody><tr *ngFor="let item of condiciones"><td class="ps-3 fw-bold">{{item.codigo}}</td><td>{{item.nombre}}</td><td class="text-center pe-3">{{item.dias}}</td></tr></tbody></table>
+                </div>
+            </ng-container>
+
+            <!-- Impuestos -->
+            <ng-container *ngIf="vistaActual === 'impuestos'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle"><thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Impuesto</th><th>Porcentaje</th><th>Uso</th></tr></thead><tbody><tr *ngFor="let imp of impuestos"><td class="ps-3 fw-bold">{{imp.nombre}}</td><td>{{imp.porcentaje}}%</td><td>{{imp.tipo}}</td></tr></tbody></table>
+                </div>
+            </ng-container>
+
+            <!-- Listas de Precio -->
+            <ng-container *ngIf="vistaActual === 'precios'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle"><thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Lista</th><th>Margen Base</th><th>Est</th></tr></thead><tbody><tr *ngFor="let l of listasPrecios"><td class="ps-3 fw-bold">{{l.nombre}}</td><td>{{l.margen}}</td><td>{{l.estado}}</td></tr></tbody></table>
+                </div>
+            </ng-container>
+
+            <!-- ============ 3. OPERACIONES ============ -->
+
+            <!-- Facturas de Venta -->
+            <ng-container *ngIf="vistaActual === 'facturas'">
+                 <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle">
+                        <thead class="bg-light text-uppercase small text-secondary">
+                            <tr>
+                                <th class="ps-3">Fecha</th>
+                                <th>N° Comprobante</th>
+                                <th>Cliente</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end">Saldo</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-end pe-3">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let f of listaFacturas">
+                                <td class="ps-3">{{ f.fecha }}</td>
+                                <td class="fw-bold text-dark">{{ f.numero }}</td>
+                                <td>{{ f.cliente }}</td>
+                                <td class="text-end fw-bold">{{ f.total | currency }}</td>
+                                <td class="text-end text-danger">{{ f.saldo | currency }}</td>
+                                <td class="text-center"><c-badge [color]="f.estado === 'Cobrada' ? 'success' : 'warning'" shape="rounded-pill">{{ f.estado }}</c-badge></td>
+                                <td class="text-end pe-3"><c-icon [content]="icons.cilPrint" class="text-secondary cursor-pointer"></c-icon></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                 </div>
+            </ng-container>
+
+            <!-- Cotizaciones -->
+            <ng-container *ngIf="vistaActual === 'cotizaciones'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up"><table cTable hover class="mb-0 align-middle"><thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Fecha</th><th>Número</th><th>Prospecto</th><th class="text-end">Monto</th><th class="text-center pe-3">Estado</th></tr></thead><tbody><tr *ngFor="let c of cotizaciones"><td class="ps-3">{{c.fecha}}</td><td>{{c.numero}}</td><td>{{c.cliente}}</td><td class="text-end">{{c.total|currency}}</td><td class="text-center pe-3"><c-badge color="info" class="text-white">{{c.estado}}</c-badge></td></tr></tbody></table></div>
+            </ng-container>
+
+            <!-- Pagos Recibidos -->
+            <ng-container *ngIf="vistaActual === 'pagos' || vistaActual === 'recibos'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up"><table cTable hover class="mb-0 align-middle"><thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Fecha</th><th>Recibo</th><th>Cliente</th><th>Forma</th><th class="text-end pe-3">Valor</th></tr></thead><tbody><tr *ngFor="let p of pagos"><td class="ps-3">{{p.fecha}}</td><td>{{p.recibo}}</td><td>{{p.cliente}}</td><td>{{p.metodo}}</td><td class="text-end pe-3 fw-bold text-success">{{p.monto|currency}}</td></tr></tbody></table></div>
+            </ng-container>
+
+            <!-- Notas de Crédito/Débito/Ordenes (Placeholders) -->
+            <ng-container *ngIf="['notas-credito','notas-debito','ordenes'].includes(vistaActual)">
+                <div class="text-center py-5 fade-in-up"><c-icon [content]="icons.cilFolderOpen" size="4xl" class="text-secondary opacity-50 mb-3"></c-icon><h3 class="text-dark">{{ tituloVista }}</h3><p>No existen registros recientes.</p></div>
+            </ng-container>
+
+            <!-- ============ 4. REPORTES ============ -->
+
+            <!-- Ventas por Cliente -->
+            <ng-container *ngIf="vistaActual === 'ventas-cliente'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle"><thead class="bg-light text-uppercase small text-secondary"><tr><th class="ps-3">Cliente</th><th class="text-center">Transacciones</th><th class="text-end pe-3">Total Ventas</th></tr></thead><tbody><tr *ngFor="let r of reporteVentasCliente"><td class="ps-3 fw-bold">{{r.cliente}}</td><td class="text-center">{{r.cantidadTx}}</td><td class="text-end pe-3 fw-bold">{{r.totalVentas|currency}}</td></tr></tbody></table>
+                </div>
+            </ng-container>
+
+            <!-- Otros reportes genéricos -->
+            <ng-container *ngIf="!['dashboard','clientes','condiciones','precios','impuestos','facturas','cotizaciones','pagos','recibos','ventas-cliente','notas-credito','notas-debito','ordenes'].includes(vistaActual)">
+                 <div class="text-center py-5 fade-in-up"><c-icon [content]="icons.cilChartLine" size="4xl" class="text-secondary opacity-50 mb-3"></c-icon><h3 class="text-dark">Reporte en construcción</h3><p>La vista seleccionada se encuentra en desarrollo.</p></div>
+            </ng-container>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODALES ============ -->
+
+<!-- 1. NUEVO CLIENTE -->
+<c-modal [visible]="modalClienteVisible" (visibleChange)="handleModalClienteChange($event)" size="lg" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Nuevo Cliente</h5><button (click)="toggleModalCliente()" cButtonClose></button></c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="clienteForm" cForm class="row g-3">
+        <div class="col-4"><label cLabel>Identificación (RUC/Ced)</label><input cFormControl formControlName="ruc"></div>
+        <div class="col-8"><label cLabel>Razón Social / Nombres</label><input cFormControl formControlName="nombre"></div>
+        <div class="col-6"><label cLabel>Teléfono</label><input cFormControl formControlName="telefono"></div>
+        <div class="col-6"><label cLabel>Email</label><input cFormControl formControlName="email"></div>
+        <div class="col-12"><label cLabel>Dirección</label><input cFormControl formControlName="direccion"></div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer><button cButton color="primary" (click)="guardarCliente()">Guardar</button></c-modal-footer>
+</c-modal>
+
+<!-- 2. NUEVA FACTURA ( INTEGRADA ) -->
+<c-modal [visible]="modalFacturaVisible" (visibleChange)="handleModalFacturaChange($event)" size="xl" backdrop="static">
+  <c-modal-header><h5 cModalTitle class="fw-bold">Emitir Factura de Venta</h5><button (click)="toggleModalFactura()" cButtonClose></button></c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="facturaForm" cForm class="row g-3">
+        <!-- Cabecera Factura -->
+        <div class="col-12 p-3 bg-light rounded mb-2 border">
+            <div class="row">
+                <div class="col-4"><label cLabel class="fw-bold">Fecha Emisión</label><input cFormControl type="date" formControlName="fecha"></div>
+                <div class="col-8"><label cLabel class="fw-bold">Cliente</label><select cSelect formControlName="cliente"><option value="">Seleccione...</option><option *ngFor="let c of clientes" [value]="c.nombre">{{c.nombre}}</option></select></div>
+            </div>
+        </div>
+        
+        <!-- Detalle Factura (Simulado visualmente para el demo) -->
+        <div class="col-12"><h6 class="border-bottom pb-2">Detalle de Productos</h6></div>
+        <div class="col-12">
+            <table class="table table-sm table-bordered">
+                <thead class="table-light"><tr><th>Producto</th><th width="10%">Cant.</th><th width="15%">Precio</th><th width="15%">Total</th><th></th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td><input type="text" class="form-control form-control-sm" placeholder="Buscar ítem (Teclea 'Lap'...)"></td>
+                        <td><input type="number" class="form-control form-control-sm" value="1"></td>
+                        <td><input type="text" class="form-control form-control-sm" value="0.00" disabled></td>
+                        <td><input type="text" class="form-control form-control-sm" value="0.00" disabled></td>
+                        <td class="text-center"><button class="btn btn-sm text-danger">x</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button cButton color="dark" size="sm" variant="outline">+ Agregar Línea</button>
+        </div>
+
+        <!-- Totales y Pie -->
+        <div class="col-12 row justify-content-end mt-2">
+            <div class="col-md-4">
+                <div class="input-group mb-2"><span class="input-group-text bg-white border-0 fw-bold">Condición Pago:</span><select cSelect formControlName="condicion" size="sm"><option>Contado</option><option>Crédito</option></select></div>
+                <div class="input-group mb-1"><span class="input-group-text w-50">Subtotal</span><input class="form-control text-end" value="0.00" disabled></div>
+                <div class="input-group mb-1"><span class="input-group-text w-50">IVA 15%</span><input class="form-control text-end" value="0.00" disabled></div>
+                <div class="input-group"><span class="input-group-text w-50 fw-bold bg-dark text-white">TOTAL</span><input cFormControl formControlName="total" type="number" class="text-end fw-bold"></div>
+            </div>
+        </div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer>
+      <button cButton color="secondary" variant="ghost" (click)="toggleModalFactura()">Cancelar</button>
+      <button cButton color="success" class="text-white" (click)="guardarFactura()">Facturar e Integrar</button>
+  </c-modal-footer>
+</c-modal>
+
+<!-- 3. NUEVO PAGO -->
+<c-modal [visible]="modalPagoVisible" (visibleChange)="handleModalPagoChange($event)" size="lg" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Registrar Cobro</h5><button (click)="toggleModalPago()" cButtonClose></button></c-modal-header>
+  <c-modal-body>
+    <form [formGroup]="pagoForm" cForm class="row g-3">
+        <div class="col-12"><label cLabel>Factura Pendiente</label><select cSelect formControlName="factura"><option value="FAC-001">FAC-001 ($575.00)</option></select></div>
+        <div class="col-6"><label cLabel>Forma Pago</label><select cSelect formControlName="metodo"><option>Transferencia</option><option>Cheque</option><option>Efectivo</option></select></div>
+        <div class="col-6"><label cLabel>Monto</label><input cFormControl type="number" formControlName="monto"></div>
+    </form>
+  </c-modal-body>
+  <c-modal-footer><button cButton color="primary" (click)="guardarPago()">Registrar</button></c-modal-footer>
+</c-modal>
+
+<!-- 4. MODAL GENERICO (Construcción) -->
+<c-modal [visible]="modalGenericoVisible" (visibleChange)="modalGenericoVisible=$event" backdrop="static"><c-modal-body>Funcionalidad disponible en versión completa.</c-modal-body><c-modal-footer><button cButton (click)="modalGenericoVisible=false">Cerrar</button></c-modal-footer></c-modal>

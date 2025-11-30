@@ -1,0 +1,186 @@
+<div class="container-fluid min-vh-100 bg-light">
+  
+  <!-- CABECERA -->
+  <div class="row py-3 border-bottom bg-white mb-4 shadow-sm align-items-center">
+    <div class="col-auto">
+      <button cButton color="light" routerLink="/" class="border" cTooltip="Volver">
+        <c-icon [content]="icons.cilArrowLeft"></c-icon>
+      </button>
+    </div>
+    <div class="col">
+      <h4 class="mb-0 text-primary fw-bold">Módulo de Compras</h4>
+      <small class="text-secondary text-uppercase ls-1">JBNetsys ERP - Abastecimiento</small>
+    </div>
+    <div class="col-auto">
+      <span class="badge bg-info px-3 py-2 rounded-pill text-white">Pendientes: {{ ordenesPendientes }}</span>
+    </div>
+  </div>
+
+  <div class="row g-4 px-3 pb-5">
+    
+    <!-- MENÚ -->
+    <div class="col-md-3 col-xl-2 fade-in-left">
+      <c-card class="border-0 shadow-sm h-100">
+        <div class="card-header bg-primary text-white py-3">
+          <h6 class="mb-0 fw-bold"><c-icon [content]="icons.cilCart" class="me-2"></c-icon> Adquisiciones</h6>
+        </div>
+        <div class="card-body p-0">
+          <c-accordion [alwaysOpen]="false" class="accordion-flush">
+            <c-accordion-item *ngFor="let grupo of menuEstructura; let i = index" [visible]="i === 0">
+              <ng-template cTemplateId="accordionHeader">
+                 <div class="fw-semibold small text-uppercase d-flex align-items-center gap-2">
+                    <c-icon [content]="grupo.icono === 'cilList' ? icons.cilList : (grupo.icono === 'cilCart' ? icons.cilCart : icons.cilChartLine)" class="text-primary"></c-icon>
+                    {{ grupo.titulo }}
+                 </div>
+              </ng-template>
+              <ng-template cTemplateId="accordionBody">
+                <div class="list-group list-group-flush">
+                  <button *ngFor="let sub of grupo.items" 
+                    class="list-group-item list-group-item-action border-0 ps-3 small py-2"
+                    [class.active]="vistaActual === sub.id"
+                    [class.fw-bold]="vistaActual === sub.id"
+                    (click)="seleccionarVista(sub)">
+                    • {{ sub.nombre }}
+                  </button>
+                </div>
+              </ng-template>
+            </c-accordion-item>
+          </c-accordion>
+        </div>
+        <div class="p-3 border-top mt-auto">
+             <button class="btn btn-outline-secondary w-100 btn-sm" (click)="volverDashboard()">
+               <c-icon [content]="icons.cilChartLine"></c-icon> Ir al Resumen
+             </button>
+        </div>
+      </c-card>
+    </div>
+
+    <!-- CONTENIDO -->
+    <div class="col-md-9 col-xl-10">
+      <div class="card border-0 shadow-sm min-vh-75">
+        
+        <!-- HEADER VISTA -->
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold text-dark-emphasis mb-0">{{ tituloVista }}</h5>
+            
+            <div class="d-flex gap-2">
+                <button cButton color="secondary" variant="ghost" class="border" (click)="exportarPDF()">
+                   <c-icon [content]="icons.cilCloudDownload"></c-icon> PDF
+                </button>
+                
+                <!-- Botonera Booleana del TS -->
+                <button *ngIf="btnNuevoProv" cButton color="primary" (click)="toggleModalProveedor()"><c-icon [content]="icons.cilPlus"></c-icon> Nuevo Prov</button>
+                <button *ngIf="btnNuevaOrden" cButton color="primary" (click)="toggleModalOrden()"><c-icon [content]="icons.cilFile"></c-icon> Nueva Orden</button>
+                <button *ngIf="btnRecepcion" cButton color="success" class="text-white" (click)="toggleModalRecepcion()"><c-icon [content]="icons.cilInbox"></c-icon> Recepción</button>
+                <button *ngIf="btnRegistrarFact" cButton color="warning" (click)="toggleModalCompra()"><c-icon [content]="icons.cilDescription"></c-icon> Factura</button>
+                <button *ngIf="btnDevolucion" cButton color="danger" class="text-white" (click)="toggleModalDevolucion()"><c-icon [content]="icons.cilLoop"></c-icon> Devolución</button>
+
+                <!-- Boton generico catalogo (impuestos, etc) -->
+                <button *ngIf="vistaActual === 'impuestos' || vistaActual === 'condiciones'" cButton color="primary" (click)="toggleModalCatalogo()"><c-icon [content]="icons.cilPlus"></c-icon> Nuevo</button>
+            </div>
+        </div>
+
+        <div class="card-body bg-light-subtle">
+            
+            <!-- 1. DASHBOARD -->
+            <ng-container *ngIf="isDashboard">
+                <div class="row g-4 fade-in-up">
+                    <div class="col-md-4"><c-card class="border-0 shadow-sm border-top border-4 border-primary p-4 text-center"><h2 class="display-6 fw-bold">{{ comprasMes | currency }}</h2><small>Compras Mes</small></c-card></div>
+                    <div class="col-md-4"><c-card class="border-0 shadow-sm border-top border-4 border-warning p-4 text-center"><h2 class="display-6 fw-bold">{{ ordenesPendientes }}</h2><small>Órdenes Pendientes</small></c-card></div>
+                    <div class="col-md-4"><c-card class="border-0 shadow-sm border-top border-4 border-success p-4 text-center"><h2 class="display-6 fw-bold">{{ entregasRecibidas }}</h2><small>Entregas</small></c-card></div>
+                    <div class="col-12 mt-5 text-center text-muted"><c-icon [content]="icons.cilCart" size="4xl" class="mb-3 opacity-25"></c-icon><h4>Gestión de Compras</h4></div>
+                </div>
+            </ng-container>
+
+            <!-- 2. LISTADOS GENERALES (USAN listaVisible) -->
+            <!-- PROVEEDORES -->
+            <ng-container *ngIf="vistaActual === 'proveedores'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle"><thead class="bg-light small"><tr><th class="ps-3">Cod</th><th>Razón Social</th><th>RUC</th><th>Contacto</th><th class="text-end pe-3">Est</th></tr></thead><tbody>
+                        <tr *ngFor="let p of listaVisible">
+                            <td class="ps-3 fw-bold">{{p.codigo}}</td><td>{{p.nombre}}</td><td>{{p.ruc}}</td><td>{{p.contacto}} <br> {{p.telefono}}</td><td class="text-end pe-3"><c-badge color="success">{{p.estado}}</c-badge></td>
+                        </tr>
+                    </tbody></table>
+                </div>
+            </ng-container>
+
+            <!-- ÓRDENES -->
+            <ng-container *ngIf="vistaActual === 'ordenes' || vistaActual === 'control-ordenes'">
+                 <div class="bg-white rounded p-3 shadow-sm fade-in-up">
+                    <table cTable hover class="mb-0 align-middle"><thead class="bg-light small"><tr><th class="ps-3">N° Orden</th><th>Fecha</th><th>Proveedor</th><th>Entrega</th><th class="text-end">Total</th><th class="text-center pe-3">Est</th></tr></thead><tbody>
+                        <tr *ngFor="let o of listaVisible">
+                            <td class="ps-3 fw-bold text-primary">{{o.numero}}</td><td>{{o.fecha}}</td><td>{{o.proveedor}}</td><td>{{o.entrega}}</td><td class="text-end fw-bold">{{o.total|currency}}</td><td class="text-center pe-3"><c-badge [color]="o.estado==='Pendiente'?'warning':'success'">{{o.estado}}</c-badge></td>
+                        </tr>
+                    </tbody></table>
+                 </div>
+            </ng-container>
+
+            <!-- RECEPCIONES -->
+            <ng-container *ngIf="vistaActual === 'recepciones'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up"><table cTable hover class="mb-0 align-middle"><thead class="bg-light small"><tr><th class="ps-3">Cod</th><th>Ref Orden</th><th>Proveedor</th><th class="text-center">Items</th><th class="text-center pe-3">Est</th></tr></thead><tbody><tr *ngFor="let r of listaVisible"><td class="ps-3 fw-bold">{{r.codigo}}</td><td>{{r.orden}}</td><td>{{r.proveedor}}</td><td class="text-center">{{r.items}}</td><td class="text-center pe-3"><c-badge color="info" class="text-white">{{r.estado}}</c-badge></td></tr></tbody></table></div>
+            </ng-container>
+
+            <!-- FACTURAS -->
+            <ng-container *ngIf="vistaActual.includes('compras') || vistaActual === 'registro-compras'">
+                 <div class="bg-white rounded p-3 shadow-sm fade-in-up"><table cTable hover class="mb-0 align-middle"><thead class="bg-light small"><tr><th class="ps-3">Fecha</th><th>N° Fac</th><th>Proveedor</th><th>Total</th><th class="text-center pe-3">Contab</th></tr></thead><tbody><tr *ngFor="let f of listaVisible"><td class="ps-3">{{f.fecha}}</td><td class="fw-bold">{{f.factura}}</td><td>{{f.proveedor}}</td><td class="fw-bold">{{f.total|currency}}</td><td class="text-center pe-3"><c-badge color="success">Si</c-badge></td></tr></tbody></table></div>
+            </ng-container>
+            
+            <!-- CATÁLOGOS SIMPLES -->
+            <ng-container *ngIf="vistaActual === 'impuestos' || vistaActual === 'condiciones'">
+                <div class="bg-white rounded p-3 shadow-sm fade-in-up"><table cTable hover><thead class="bg-light small"><tr><th class="ps-3">Descripción</th></tr></thead><tbody><tr *ngFor="let i of listaVisible"><td class="ps-3">{{i.nombre}}</td></tr></tbody></table></div>
+            </ng-container>
+
+            <!-- VACIO -->
+            <ng-container *ngIf="isVacio">
+                <div class="text-center py-5 fade-in-up"><c-icon [content]="icons.cilFolderOpen" size="4xl" class="text-secondary opacity-50 mb-3"></c-icon><h3 class="text-dark">{{tituloVista}}</h3><p>Sin registros.</p></div>
+            </ng-container>
+            
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODALES ============ -->
+
+<!-- 1. PROVEEDOR (Uso de asignación directa para cerrar) -->
+<c-modal [visible]="modalProveedorVisible" (visibleChange)="modalProveedorVisible = $event" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Proveedor</h5><button (click)="modalProveedorVisible = false" cButtonClose></button></c-modal-header>
+  <c-modal-body><form [formGroup]="proveedorForm" class="row g-3"><div class="col-6"><label cLabel>RUC</label><input cFormControl formControlName="ruc"></div><div class="col-12"><label cLabel>Razón Social</label><input cFormControl formControlName="nombre"></div></form></c-modal-body>
+  <c-modal-footer><button cButton color="primary" (click)="guardarProveedor()">Guardar</button></c-modal-footer>
+</c-modal>
+
+<!-- 2. ORDEN (LG) -->
+<c-modal [visible]="modalOrdenVisible" (visibleChange)="modalOrdenVisible = $event" size="lg" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Orden Compra</h5><button (click)="modalOrdenVisible = false" cButtonClose></button></c-modal-header>
+  <c-modal-body><form [formGroup]="ordenForm" class="row g-3 p-2"><div class="col-6"><label cLabel>Proveedor</label><select cSelect formControlName="proveedor"><option *ngFor="let p of proveedores" [value]="p.nombre">{{p.nombre}}</option></select></div><div class="col-3"><label cLabel>Fecha</label><input cFormControl type="date" formControlName="fecha"></div><div class="col-3"><label cLabel>Entrega</label><input cFormControl type="date" formControlName="entrega"></div><div class="col-4"><label cLabel>Total Estimado</label><input cFormControl type="number" formControlName="total"></div></form></c-modal-body>
+  <c-modal-footer><button cButton color="primary" (click)="guardarOrden()">Generar</button></c-modal-footer>
+</c-modal>
+
+<!-- 3. RECEPCION -->
+<c-modal [visible]="modalRecepcionVisible" (visibleChange)="modalRecepcionVisible = $event" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Recepción</h5><button (click)="modalRecepcionVisible = false" cButtonClose></button></c-modal-header>
+  <c-modal-body><form [formGroup]="recepcionForm" class="row g-3"><div class="col-12"><label cLabel>O.C Ref</label><input cFormControl formControlName="orden"></div><div class="col-6"><label cLabel>Fecha</label><input cFormControl type="date" formControlName="fecha"></div></form></c-modal-body>
+  <c-modal-footer><button cButton color="success" class="text-white" (click)="guardarRecepcion()">Recibir</button></c-modal-footer>
+</c-modal>
+
+<!-- 4. COMPRA FACTURA (LG) -->
+<c-modal [visible]="modalCompraVisible" (visibleChange)="modalCompraVisible = $event" size="lg" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Registro Factura</h5><button (click)="modalCompraVisible = false" cButtonClose></button></c-modal-header>
+  <c-modal-body><form [formGroup]="compraForm" class="row g-3"><div class="col-6"><label cLabel>Proveedor</label><select cSelect formControlName="proveedor"><option *ngFor="let p of proveedores" [value]="p.nombre">{{p.nombre}}</option></select></div><div class="col-6"><label cLabel>Factura</label><input cFormControl formControlName="factura"></div><div class="col-4"><label cLabel>Total</label><input cFormControl type="number" formControlName="total"></div></form></c-modal-body>
+  <c-modal-footer><button cButton color="warning" (click)="guardarCompra()">Contabilizar</button></c-modal-footer>
+</c-modal>
+
+<!-- 5. DEVOLUCION -->
+<c-modal [visible]="modalDevolucionVisible" (visibleChange)="modalDevolucionVisible = $event" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Devolución</h5><button (click)="modalDevolucionVisible = false" cButtonClose></button></c-modal-header>
+  <c-modal-body><form [formGroup]="devolucionForm"><label cLabel>Motivo</label><input cFormControl formControlName="motivo"></form></c-modal-body>
+  <c-modal-footer><button cButton color="danger" class="text-white" (click)="guardarDevolucion()">Procesar</button></c-modal-footer>
+</c-modal>
+
+<!-- 6. CATALOGO GENERICO -->
+<c-modal [visible]="modalCatalogoVisible" (visibleChange)="modalCatalogoVisible = $event" backdrop="static">
+  <c-modal-header><h5 cModalTitle>Nuevo Registro</h5><button (click)="modalCatalogoVisible = false" cButtonClose></button></c-modal-header>
+  <c-modal-body><form [formGroup]="catalogoForm"><label cLabel>Nombre</label><input cFormControl formControlName="nombre"></form></c-modal-body>
+  <c-modal-footer><button cButton color="primary" (click)="guardarCatalogo()">Guardar</button></c-modal-footer>
+</c-modal>
